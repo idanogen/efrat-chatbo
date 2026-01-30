@@ -130,7 +130,7 @@ function hideTyping() {
     if (typing) typing.remove();
 }
 
-// Send message to server with streaming
+// Send message to server with streaming (with fallback)
 async function sendMessage() {
     const message = userInput.value.trim();
     if (!message || !currentAgent) return;
@@ -161,13 +161,18 @@ async function sendMessage() {
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
+    // Show loading indicator
+    contentDiv.innerHTML = '<span class="typing-indicator"><span></span><span></span><span></span></span>';
+
     try {
+        // Try streaming first
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message,
-                agentId: currentAgent.id
+                agentId: currentAgent.id,
+                stream: true
             })
         });
 
@@ -175,34 +180,70 @@ async function sendMessage() {
             throw new Error('Server error');
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        const contentType = response.headers.get('content-type');
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+        // Check if response is streaming (SSE) or JSON
+        if (contentType && contentType.includes('text/event-stream')) {
+            // Streaming response
+            contentDiv.textContent = '';
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.type === 'delta' && data.text) {
-                            contentDiv.textContent += data.text;
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
-                        } else if (data.type === 'error') {
-                            contentDiv.textContent = 'מצטער, קרתה שגיאה. נסה שוב.';
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.type === 'delta' && data.text) {
+                                contentDiv.textContent += data.text;
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                            } else if (data.type === 'error') {
+                                throw new Error('Stream error');
+                            }
+                        } catch (e) {
+                            if (e.message === 'Stream error') throw e;
                         }
-                    } catch (e) {
-                        // Ignore parse errors
                     }
                 }
             }
+        } else {
+            // JSON fallback response
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            contentDiv.textContent = data.reply;
         }
     } catch (error) {
-        contentDiv.textContent = 'מצטער, לא הצלחתי להתחבר לשרת.';
+        console.error('Streaming failed, trying fallback:', error);
+
+        // Fallback to non-streaming
+        try {
+            const fallbackResponse = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message,
+                    agentId: currentAgent.id,
+                    stream: false
+                })
+            });
+
+            const data = await fallbackResponse.json();
+            if (data.error) {
+                contentDiv.textContent = 'מצטער, קרתה שגיאה. נסה שוב.';
+            } else {
+                contentDiv.textContent = data.reply;
+            }
+        } catch (fallbackError) {
+            contentDiv.textContent = 'מצטער, לא הצלחתי להתחבר לשרת.';
+        }
     }
 
     sendButton.disabled = false;

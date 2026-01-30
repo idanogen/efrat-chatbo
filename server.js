@@ -166,7 +166,7 @@ app.get('/api/agents', (req, res) => {
 
 // Chat endpoint with streaming
 app.post('/api/chat', async (req, res) => {
-    const { message, sessionId, agentId = 'efrat' } = req.body;
+    const { message, sessionId, agentId = 'efrat', stream: useStream = true } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: 'Message is required' });
@@ -187,10 +187,36 @@ app.post('/api/chat', async (req, res) => {
     const history = conversations.get(sessionKey);
     history.push({ role: 'user', content: message });
 
+    // Non-streaming fallback
+    if (!useStream) {
+        try {
+            const response = await anthropic.messages.create({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 1024,
+                messages: history,
+                system: agent.systemPrompt
+            });
+
+            const reply = response.content[0].text;
+            history.push({ role: 'assistant', content: reply });
+
+            if (history.length > 20) {
+                history.splice(0, 2);
+            }
+
+            return res.json({ reply, sessionId: sessionKey, agentId });
+        } catch (error) {
+            console.error('Error:', error.message);
+            history.pop();
+            return res.status(500).json({ error: 'Failed to get response' });
+        }
+    }
+
     // Set up SSE for streaming
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     try {
         let fullReply = '';
