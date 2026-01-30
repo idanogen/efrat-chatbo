@@ -3,7 +3,6 @@ const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 const agentCards = document.getElementById('agentCards');
 const currentAgentName = document.getElementById('currentAgentName');
-const assistantAvatar = document.getElementById('assistantAvatar');
 
 let currentAgent = null;
 let agents = [];
@@ -96,6 +95,8 @@ function addMessage(content, role) {
     messageDiv.appendChild(bubbleDiv);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return contentDiv;
 }
 
 // Show typing indicator
@@ -130,7 +131,7 @@ function hideTyping() {
     if (typing) typing.remove();
 }
 
-// Send message to server with streaming (with fallback)
+// Send message to server
 async function sendMessage() {
     const message = userInput.value.trim();
     if (!message || !currentAgent) return;
@@ -140,110 +141,31 @@ async function sendMessage() {
     userInput.style.height = 'auto';
     sendButton.disabled = true;
 
-    // Create assistant message element for streaming
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message assistant';
-
-    const avatarDiv = document.createElement('div');
-    avatarDiv.className = 'message-avatar';
-    avatarDiv.textContent = currentAgent?.icon || '🤖';
-
-    const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = 'message-bubble';
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.textContent = '';
-
-    bubbleDiv.appendChild(contentDiv);
-    messageDiv.appendChild(avatarDiv);
-    messageDiv.appendChild(bubbleDiv);
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    // Show loading indicator
-    contentDiv.innerHTML = '<span class="typing-indicator"><span></span><span></span><span></span></span>';
+    showTyping();
 
     try {
-        // Try streaming first
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message,
-                agentId: currentAgent.id,
-                stream: true
+                agentId: currentAgent.id
             })
         });
 
-        if (!response.ok) {
-            throw new Error('Server error');
-        }
+        hideTyping();
 
-        const contentType = response.headers.get('content-type');
+        const data = await response.json();
 
-        // Check if response is streaming (SSE) or JSON
-        if (contentType && contentType.includes('text/event-stream')) {
-            // Streaming response
-            contentDiv.textContent = '';
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            if (data.type === 'delta' && data.text) {
-                                contentDiv.textContent += data.text;
-                                chatMessages.scrollTop = chatMessages.scrollHeight;
-                            } else if (data.type === 'error') {
-                                throw new Error('Stream error');
-                            }
-                        } catch (e) {
-                            if (e.message === 'Stream error') throw e;
-                        }
-                    }
-                }
-            }
+        if (data.error) {
+            addMessage('מצטער, קרתה שגיאה. נסה שוב.', 'assistant');
         } else {
-            // JSON fallback response
-            const data = await response.json();
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            contentDiv.textContent = data.reply;
+            addMessage(data.reply, 'assistant');
         }
     } catch (error) {
-        console.error('Streaming failed, trying fallback:', error);
-
-        // Fallback to non-streaming
-        try {
-            const fallbackResponse = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message,
-                    agentId: currentAgent.id,
-                    stream: false
-                })
-            });
-
-            const data = await fallbackResponse.json();
-            if (data.error) {
-                contentDiv.textContent = 'מצטער, קרתה שגיאה. נסה שוב.';
-            } else {
-                contentDiv.textContent = data.reply;
-            }
-        } catch (fallbackError) {
-            contentDiv.textContent = 'מצטער, לא הצלחתי להתחבר לשרת.';
-        }
+        hideTyping();
+        addMessage('מצטער, לא הצלחתי להתחבר לשרת.', 'assistant');
+        console.error('Error:', error);
     }
 
     sendButton.disabled = false;

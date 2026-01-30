@@ -3,7 +3,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Check for API key
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -164,9 +164,9 @@ app.get('/api/agents', (req, res) => {
     res.json(agentList);
 });
 
-// Chat endpoint with streaming
+// Chat endpoint - simple JSON response
 app.post('/api/chat', async (req, res) => {
-    const { message, sessionId, agentId = 'efrat', stream: useStream = true } = req.body;
+    const { message, sessionId, agentId = 'efrat' } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: 'Message is required' });
@@ -187,69 +187,27 @@ app.post('/api/chat', async (req, res) => {
     const history = conversations.get(sessionKey);
     history.push({ role: 'user', content: message });
 
-    // Non-streaming fallback
-    if (!useStream) {
-        try {
-            const response = await anthropic.messages.create({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 1024,
-                messages: history,
-                system: agent.systemPrompt
-            });
-
-            const reply = response.content[0].text;
-            history.push({ role: 'assistant', content: reply });
-
-            if (history.length > 20) {
-                history.splice(0, 2);
-            }
-
-            return res.json({ reply, sessionId: sessionKey, agentId });
-        } catch (error) {
-            console.error('Error:', error.message);
-            history.pop();
-            return res.status(500).json({ error: 'Failed to get response' });
-        }
-    }
-
-    // Set up SSE for streaming
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-
     try {
-        let fullReply = '';
-
-        const stream = await anthropic.messages.stream({
+        const response = await anthropic.messages.create({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 1024,
             messages: history,
             system: agent.systemPrompt
         });
 
-        for await (const event of stream) {
-            if (event.type === 'content_block_delta' && event.delta?.text) {
-                fullReply += event.delta.text;
-                res.write(`data: ${JSON.stringify({ type: 'delta', text: event.delta.text })}\n\n`);
-            }
-        }
-
-        // Save to history
-        history.push({ role: 'assistant', content: fullReply });
+        const reply = response.content[0].text;
+        history.push({ role: 'assistant', content: reply });
 
         // Keep only last 20 messages
         if (history.length > 20) {
             history.splice(0, 2);
         }
 
-        res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-        res.end();
+        res.json({ reply, sessionId: sessionKey, agentId });
     } catch (error) {
         console.error('Error:', error.message);
         history.pop();
-        res.write(`data: ${JSON.stringify({ type: 'error', error: 'Failed to get response' })}\n\n`);
-        res.end();
+        res.status(500).json({ error: 'Failed to get response' });
     }
 });
 
