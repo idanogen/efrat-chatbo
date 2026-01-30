@@ -130,7 +130,7 @@ function hideTyping() {
     if (typing) typing.remove();
 }
 
-// Send message to server
+// Send message to server with streaming
 async function sendMessage() {
     const message = userInput.value.trim();
     if (!message || !currentAgent) return;
@@ -140,7 +140,26 @@ async function sendMessage() {
     userInput.style.height = 'auto';
     sendButton.disabled = true;
 
-    showTyping();
+    // Create assistant message element for streaming
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant';
+
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'message-avatar';
+    avatarDiv.textContent = currentAgent?.icon || '🤖';
+
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.className = 'message-bubble';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = '';
+
+    bubbleDiv.appendChild(contentDiv);
+    messageDiv.appendChild(avatarDiv);
+    messageDiv.appendChild(bubbleDiv);
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
         const response = await fetch('/api/chat', {
@@ -152,17 +171,34 @@ async function sendMessage() {
             })
         });
 
-        const data = await response.json();
-        hideTyping();
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-        if (data.error) {
-            addMessage('מצטער, קרתה שגיאה. נסה שוב.', 'assistant');
-        } else {
-            addMessage(data.reply, 'assistant');
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.type === 'delta' && data.text) {
+                            contentDiv.textContent += data.text;
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        } else if (data.type === 'error') {
+                            contentDiv.textContent = 'מצטער, קרתה שגיאה. נסה שוב.';
+                        }
+                    } catch (e) {
+                        // Ignore parse errors
+                    }
+                }
+            }
         }
     } catch (error) {
-        hideTyping();
-        addMessage('מצטער, לא הצלחתי להתחבר לשרת.', 'assistant');
+        contentDiv.textContent = 'מצטער, לא הצלחתי להתחבר לשרת.';
     }
 
     sendButton.disabled = false;

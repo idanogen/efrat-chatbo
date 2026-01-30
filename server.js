@@ -164,7 +164,7 @@ app.get('/api/agents', (req, res) => {
     res.json(agentList);
 });
 
-// Chat endpoint
+// Chat endpoint with streaming
 app.post('/api/chat', async (req, res) => {
     const { message, sessionId, agentId = 'efrat' } = req.body;
 
@@ -187,27 +187,43 @@ app.post('/api/chat', async (req, res) => {
     const history = conversations.get(sessionKey);
     history.push({ role: 'user', content: message });
 
+    // Set up SSE for streaming
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
     try {
-        const response = await anthropic.messages.create({
+        let fullReply = '';
+
+        const stream = await anthropic.messages.stream({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 1024,
             messages: history,
             system: agent.systemPrompt
         });
 
-        const reply = response.content[0].text;
-        history.push({ role: 'assistant', content: reply });
+        for await (const event of stream) {
+            if (event.type === 'content_block_delta' && event.delta?.text) {
+                fullReply += event.delta.text;
+                res.write(`data: ${JSON.stringify({ type: 'delta', text: event.delta.text })}\n\n`);
+            }
+        }
+
+        // Save to history
+        history.push({ role: 'assistant', content: fullReply });
 
         // Keep only last 20 messages
         if (history.length > 20) {
             history.splice(0, 2);
         }
 
-        res.json({ reply, sessionId: sessionKey, agentId });
+        res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+        res.end();
     } catch (error) {
         console.error('Error:', error.message);
         history.pop();
-        res.status(500).json({ error: 'Failed to get response' });
+        res.write(`data: ${JSON.stringify({ type: 'error', error: 'Failed to get response' })}\n\n`);
+        res.end();
     }
 });
 
