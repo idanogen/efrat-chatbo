@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>א.פ.ר.ת | מודל להתבוננות עצמית</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="hero-content">
+                <div class="logo">
+                    <span class="logo-letter">א</span>
+                    <span class="logo-dot">.</span>
+                    <span class="logo-letter">פ</span>
+                    <span class="logo-dot">.</span>
+                    <span class="logo-letter">ר</span>
+                    <span class="logo-dot">.</span>
+                    <span class="logo-letter">ת</span>
+                </div>
+                <h1>מודל להתבוננות עצמית</h1>
+                <p class="tagline">אירוע · פרשנות · רגש · תגובה</p>
+            </div>
+        </header>
+
+        <!-- Info Cards -->
+        <section class="info-section">
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="card-icon">א</div>
+                    <h3>אירוע</h3>
+                    <p>מה באמת קרה? העובדות בלבד.</p>
+                </div>
+                <div class="info-card">
+                    <div class="card-icon">פ</div>
+                    <h3>פרשנות</h3>
+                    <p>איזו משמעות נתת לאירוע?</p>
+                </div>
+                <div class="info-card">
+                    <div class="card-icon">ר</div>
+                    <h3>רגש</h3>
+                    <p>מה הרגשת כתוצאה מהפרשנות?</p>
+                </div>
+                <div class="info-card">
+                    <div class="card-icon">ת</div>
+                    <h3>תגובה</h3>
+                    <p>איך בחרת להגיב?</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chat Section -->
+        <section class="chat-section">
+            <div class="chat-wrapper">
+                <div class="chat-header">
+                    <div class="chat-status">
+                        <span class="status-dot"></span>
+                        <span>המדריך מוכן לשיחה</span>
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-avatar">🌱</div>
+                            <div class="message-bubble">
+                                <div class="message-content">שלום! אני כאן כדי ללוות אותך בתהליך של התבוננות עצמית באמצעות מודל א.פ.ר.ת. ספר/י לי, מה עובר עליך?</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <textarea
+                            id="userInput"
+                            placeholder="שתף/י את מה שעובר עליך..."
+                            rows="1"
+                        ></textarea>
+                        <button id="sendButton" aria-label="שלח הודעה">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-disclaimer">
+                    <p>🔒 השיחה פרטית ואינה נשמרת · הכלי אינו מחליף טיפול מקצועי</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>מבוסס על עבודתם של אלברט אליס ואלפרד אדלר</p>
+            <p class="footer-help">במצוקה? ער"ן - עזרה ראשונה נפשית: <strong>1201</strong></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

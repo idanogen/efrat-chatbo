@@ -1,0 +1,14 @@
+{
+  "name": "claude-chat-landing",
+  "version": "1.0.0",
+  "description": "Landing page with Claude AI chat",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  }
+}
