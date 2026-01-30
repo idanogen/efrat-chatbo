@@ -206,8 +206,9 @@ app.post('/api/chat', async (req, res) => {
         res.json({ reply, sessionId: sessionKey, agentId });
     } catch (error) {
         console.error('Error:', error.message);
+        console.error('Full error:', error);
         history.pop();
-        res.status(500).json({ error: 'Failed to get response' });
+        res.status(500).json({ error: 'Failed to get response', details: error.message });
     }
 });
 

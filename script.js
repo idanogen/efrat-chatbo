@@ -158,7 +158,8 @@ async function sendMessage() {
         const data = await response.json();
 
         if (data.error) {
-            addMessage('מצטער, קרתה שגיאה. נסה שוב.', 'assistant');
+            console.error('Server error:', data.details);
+            addMessage(`מצטער, קרתה שגיאה: ${data.details || 'נסה שוב'}`, 'assistant');
         } else {
             addMessage(data.reply, 'assistant');
         }
