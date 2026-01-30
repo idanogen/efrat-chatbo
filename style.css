@@ -9,10 +9,12 @@
     --primary-light: #2d5a87;
     --secondary: #64748b;
     --accent: #0d9488;
+    --accent-light: #14b8a6;
     --bg-main: #ffffff;
     --bg-subtle: #f8fafc;
     --bg-card: #ffffff;
     --border: #e2e8f0;
+    --border-hover: #cbd5e1;
     --text-primary: #0f172a;
     --text-secondary: #475569;
     --text-muted: #94a3b8;
@@ -41,7 +43,7 @@ body {
 /* Hero Section */
 .hero {
     text-align: center;
-    padding: 80px 20px 50px;
+    padding: 60px 20px 30px;
 }
 
 .hero-content {
@@ -49,99 +51,89 @@ body {
     margin: 0 auto;
 }
 
-.logo {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2px;
-    margin-bottom: 16px;
-}
-
-.logo-letter {
-    font-size: 2.8rem;
+.main-title {
+    font-size: 2.2rem;
     font-weight: 700;
     color: var(--primary);
-}
-
-.logo-dot {
-    font-size: 2.2rem;
-    color: var(--accent);
-    font-weight: 400;
-    margin: 0 1px;
-}
-
-.hero h1 {
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: var(--text-secondary);
     margin-bottom: 8px;
-    letter-spacing: -0.01em;
 }
 
 .tagline {
-    font-size: 0.95rem;
-    color: var(--text-muted);
+    font-size: 1.05rem;
+    color: var(--text-secondary);
     font-weight: 400;
-    letter-spacing: 1px;
 }
 
-/* Info Cards */
-.info-section {
-    padding: 10px 0 50px;
+/* Agent Selector */
+.agent-selector-section {
+    padding: 10px 0 40px;
 }
 
-.info-cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+.agent-cards {
+    display: flex;
+    justify-content: center;
     gap: 20px;
-    max-width: 900px;
+    flex-wrap: wrap;
+    max-width: 700px;
     margin: 0 auto;
 }
 
-.info-card {
+.agent-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
     background: var(--bg-card);
-    padding: 28px 20px;
+    padding: 20px 28px;
     border-radius: var(--radius-md);
-    text-align: center;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
+    cursor: pointer;
     transition: all 0.2s ease;
+    min-width: 280px;
 }
 
-.info-card:hover {
-    border-color: var(--primary-light);
+.agent-card:hover {
+    border-color: var(--border-hover);
     box-shadow: var(--shadow-md);
 }
 
-.card-icon {
-    width: 44px;
-    height: 44px;
-    margin: 0 auto 14px;
-    background: var(--primary);
-    border-radius: var(--radius-sm);
+.agent-card.active {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.03) 0%, rgba(13, 148, 136, 0.03) 100%);
+}
+
+.agent-icon {
+    font-size: 2.2rem;
+    width: 56px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 600;
+    background: var(--bg-subtle);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.agent-card.active .agent-icon {
+    background: var(--primary);
     color: white;
+    font-size: 1.8rem;
 }
 
-.info-card h3 {
-    font-size: 1rem;
+.agent-info h3 {
+    font-size: 1.1rem;
     font-weight: 600;
-    margin-bottom: 6px;
     color: var(--text-primary);
+    margin-bottom: 4px;
 }
 
-.info-card p {
-    font-size: 0.85rem;
+.agent-info p {
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    line-height: 1.5;
 }
 
 /* Chat Section */
 .chat-section {
-    padding: 10px 0 80px;
+    padding: 0 0 60px;
 }
 
 .chat-wrapper {
@@ -227,14 +219,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 1rem;
     flex-shrink: 0;
 }
 
 .message.assistant .message-avatar {
     background: var(--primary);
     color: white;
-    font-size: 1rem;
 }
 
 .message.user .message-avatar {
@@ -290,6 +281,12 @@ body {
     box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.08);
 }
 
+#userInput:disabled {
+    background: var(--bg-subtle);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 #userInput::placeholder {
     color: var(--text-muted);
 }
@@ -309,11 +306,11 @@ body {
     flex-shrink: 0;
 }
 
-#sendButton:hover {
+#sendButton:hover:not(:disabled) {
     background: var(--primary-light);
 }
 
-#sendButton:active {
+#sendButton:active:not(:disabled) {
     transform: scale(0.96);
 }
 
@@ -362,22 +359,15 @@ body {
 /* Footer */
 .footer {
     text-align: center;
-    padding: 40px 20px 50px;
-    border-top: 1px solid var(--border);
-    background: var(--bg-card);
+    padding: 30px 20px 40px;
+    color: var(--text-muted);
 }
 
 .footer p {
     font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 6px;
 }
 
-.footer-help {
-    color: var(--text-secondary);
-}
-
-.footer-help strong {
+.footer strong {
     color: var(--accent);
     font-weight: 600;
 }
@@ -403,28 +393,22 @@ body {
 /* Responsive */
 @media (max-width: 768px) {
     .hero {
-        padding: 50px 20px 40px;
+        padding: 40px 20px 20px;
     }
 
-    .logo-letter {
-        font-size: 2.2rem;
+    .main-title {
+        font-size: 1.8rem;
     }
 
-    .logo-dot {
-        font-size: 1.7rem;
+    .agent-cards {
+        flex-direction: column;
+        align-items: center;
     }
 
-    .hero h1 {
-        font-size: 1.1rem;
-    }
-
-    .info-cards {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 14px;
-    }
-
-    .info-card {
-        padding: 22px 16px;
+    .agent-card {
+        width: 100%;
+        max-width: 340px;
+        min-width: auto;
     }
 
     .chat-messages {
@@ -446,22 +430,13 @@ body {
         padding: 0 16px;
     }
 
-    .info-cards {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+    .agent-card {
+        padding: 16px 20px;
     }
 
-    .card-icon {
-        width: 38px;
-        height: 38px;
-        font-size: 1.1rem;
-    }
-
-    .info-card h3 {
-        font-size: 0.95rem;
-    }
-
-    .info-card p {
-        font-size: 0.8rem;
+    .agent-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.8rem;
     }
 }
