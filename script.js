@@ -171,6 +171,10 @@ async function sendMessage() {
             })
         });
 
+        if (!response.ok) {
+            throw new Error('Server error');
+        }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
